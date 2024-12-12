@@ -1,5 +1,5 @@
 pip==24.3.1
-streamlit==1.40.0
+streamlit==1.40.1
 pandas==2.2.3
 time
 matplotlib==3.9.3
