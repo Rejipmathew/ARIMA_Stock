@@ -1,5 +1,5 @@
-streamlit==1.40.1  
-pandas==2.2.0
+streamlit==1.40.0
+pandas==2.2.2
 time
 matplotlib==3.9.3
 statsmodels==0.14.4
