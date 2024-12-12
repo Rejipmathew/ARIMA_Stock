@@ -1,3 +1,4 @@
+streamlit==1.40.1  
 pandas==2.2.0
 time
 matplotlib==3.9.3
@@ -5,7 +6,6 @@ statsmodels==0.14.4
 scikit-learn==1.6.0
 tensorflow==2.18.0
 pmdarima==2.0.4
-streamlit==1.40.1  
 yfinance==0.2.50
 pandas==2.2.3     
 matplotlib==3.9.2
