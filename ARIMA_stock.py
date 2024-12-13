@@ -24,11 +24,14 @@ def data_loader(ticker="AAPL"):
     st.write(data.head())
     return data
 
-# Plotting Functions (Streamlit)
+# Plotting Functions (Streamlit) - Modified to handle potential errors
 def plot_predictions(train, predictions, title):
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(train.index, train, label='Actual')
-    ax.plot(train.index, predictions, label='Predicted', color='red')
+    try:
+        ax.plot(train.index, train.values, label='Actual')
+        ax.plot(train.index, predictions, label='Predicted', color='red')
+    except Exception as e:
+        st.error(f"Error plotting predictions: {e}")
     ax.set_title(title)
     ax.set_xlabel('Date')
     ax.set_ylabel('Close-Price')
@@ -36,7 +39,10 @@ def plot_predictions(train, predictions, title):
 
 def plot_raw_data(data):
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(data.index, data["Adj Close"], label='Close Price')
+    try:
+        ax.plot(data.index, data["Adj Close"].values, label='Close Price')
+    except Exception as e:
+        st.error(f"Error plotting raw data: {e}")
     ax.set_title('Raw Time Series Data')
     ax.set_xlabel('Date')
     ax.set_ylabel('Close Price')
@@ -45,8 +51,11 @@ def plot_raw_data(data):
 
 def plot_train_test(train, test):
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(train.index, train, label='Train Set')
-    ax.plot(test.index, test, label='Test Set', color='orange')
+    try:
+        ax.plot(train.index, train.values, label='Train Set')
+        ax.plot(test.index, test.values, label='Test Set', color='orange')
+    except Exception as e:
+        st.error(f"Error plotting train-test data: {e}")
     ax.set_title('Train and Test Data')
     ax.set_xlabel('Date')
     ax.set_ylabel('Close Price')
@@ -54,7 +63,10 @@ def plot_train_test(train, test):
 
 def plot_prediction_errors(errors):
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(errors, label='Prediction Errors')
+    try:
+        ax.plot(range(len(errors)), errors, label='Prediction Errors')  # Use range(len(errors)) for x-axis
+    except Exception as e:
+        st.error(f"Error plotting prediction errors: {e}")
     ax.set_title('Prediction Errors over Time')
     ax.set_xlabel('Time Step')
     ax.set_ylabel('Error')
@@ -63,8 +75,11 @@ def plot_prediction_errors(errors):
 
 def plot_final_predictions(test, final_predictions):
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(test.index, test, label='Actual')
-    ax.plot(test.index, final_predictions, label='Corrected Prediction', color='green')
+    try:
+        ax.plot(test.index, test.values, label='Actual')
+        ax.plot(test.index, final_predictions, label='Corrected Prediction', color='green')
+    except Exception as e:
+        st.error(f"Error plotting final predictions: {e}")
     ax.set_title('Final Predictions with Error Correction')
     ax.set_xlabel('Date')
     ax.set_ylabel('Close Price')
@@ -105,9 +120,9 @@ def apply_transform(data, n: int):
     target_data = []
     for i in range(n, len(data)):
         try:
-            input_sequence = data[data.index[i-n:i]]  # Use index values
+            input_sequence = data.iloc[i-n:i]  # Use iloc for integer indexing
             middle_data.append(input_sequence)
-            target_data.append(data[data.index[i]])  # Use index value
+            target_data.append(data.iloc[i])
         except IndexError:
             st.error(f"Error: Index {i} is out of bounds for the data.")
             return None, None
@@ -139,11 +154,11 @@ def calculate_accuracy(true_values, predictions):
     mae = mean_absolute_error(true_values, predictions)
     return mse, rmse, mae
 
-# Error Evaluation from LSTM Predictions
+# Error Evaluation from LSTM Predictions - Modified to use .iloc
 def Error_Evaluation(train_data, predict_train_data, n: int):
     errors = []
     for i in range(len(predict_train_data)):
-        err = train_data[n + i] - predict_train_data[i]
+        err = train_data.iloc[n + i] - predict_train_data[i]  # Use .iloc
         errors.append(err)
     return errors
 
@@ -221,7 +236,7 @@ def main():
 
     plot_predictions(test, predictions[:-1], "LSTM Predictions VS Actual Values")
     errors_data = Error_Evaluation(train, full_predictions, n)
-    plot_prediction_errors(errors_data)
+    plot_prediction_errors(errors_data)  # No need for range(len(errors)) here
     st.write(f"\n\n**The {days} prediction values from LSTM:**\n")
     for i in range(days):
         actual_value = test.iloc[i] if i < len(test) else "No actual value (out of range)"
