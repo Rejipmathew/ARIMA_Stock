@@ -87,7 +87,7 @@ def plot_arima_accuracy(mse, rmse, mae):
     ax.set_title('ARIMA Model Accuracy Metrics')
     st.pyplot(fig)
 
-# Data Allocation
+# Data Allocation (returns Series for train and test)
 def data_allocation(data, days):
     train_len_val = len(data) - days
     train, test = data["Adj Close"].iloc[0:train_len_val], data["Adj Close"].iloc[train_len_val:]
@@ -97,16 +97,20 @@ def data_allocation(data, days):
     st.write("**Testing Set:**")
     st.write(test)
     st.write(f"Number of Entries: {len(test)}")
-    return train, test
+    return train, test  # Return Series
 
-# Data Transformation for LSTM
+# Data Transformation for LSTM (handles different index types)
 def apply_transform(data, n: int):
     middle_data = []
     target_data = []
     for i in range(n, len(data)):
-        input_sequence = data[i-n:i]
-        middle_data.append(input_sequence)
-        target_data.append(data[i])
+        try:
+            input_sequence = data[data.index[i-n:i]]  # Use index values
+            middle_data.append(input_sequence)
+            target_data.append(data[data.index[i]])  # Use index value
+        except IndexError:
+            st.error(f"Error: Index {i} is out of bounds for the data.")
+            return None, None
     middle_data = np.array(middle_data).reshape((len(middle_data), n, 1))
     target_data = np.array(target_data)
     return middle_data, target_data
@@ -114,6 +118,8 @@ def apply_transform(data, n: int):
 # LSTM Model Training
 def LSTM(train, n: int, number_nodes, learning_rate, epochs, batch_size):
     middle_data, target_data = apply_transform(train, n)
+    if middle_data is None or target_data is None:
+        return None, None, None  # Return None in case of error in apply_transform
     model = tf.keras.Sequential([
         tf.keras.layers.Input((n,1)),
         tf.keras.layers.LSTM(number_nodes,input_shape=(n, 1)),
@@ -188,13 +194,16 @@ def main():
     plot_raw_data(data)
 
     # Data Allocation
-    train, test = data_allocation(data, days)
+    train, test = data_allocation(data, days)  # train is now a Series
     plot_train_test(train, test)
 
     # LSTM Model 
     st1 = time.time()
-    # Pass the "Adj Close" column from the training set to the LSTM function
-    model, history, full_predictions = LSTM(train, n, number_nodes, learning_rate, epochs, batch_size) 
+    model, history, full_predictions = LSTM(train, n, number_nodes, learning_rate, epochs, batch_size)
+    # Check if the model was trained successfully
+    if model is None:
+        st.error("Error: LSTM model training failed. Please check the data and parameters.")
+        return  # Exit the app if model training fails
     plot_predictions(train[n:], full_predictions, "LSTM PREDICTIONS VS ACTUAL Values For TRAIN Data Set")
 
     # Prediction and Evaluation
