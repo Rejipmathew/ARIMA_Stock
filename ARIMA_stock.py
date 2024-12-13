@@ -16,7 +16,7 @@ st.set_page_config(page_title="Stock Price Prediction", layout="wide")
 # --- Functions ---
 
 # Data Loading (yfinance) with caching
-@st.cache_data 
+@st.cache_data  
 def data_loader(ticker="AAPL"):
     data = yf.download(ticker)
     data = data.dropna()
@@ -109,32 +109,32 @@ def apply_transform(data, n: int):
         target_data.append(data[i])
     middle_data = np.array(middle_data).reshape((len(middle_data), n, 1))
     target_data = np.array(target_data)
-    return middle_data,target_data
+    return middle_data, target_data
 
 # LSTM Model Training
-def LSTM(train,n : int, number_nodes, learning_rate, epochs, batch_size):
+def LSTM(train, n: int, number_nodes, learning_rate, epochs, batch_size):
     middle_data, target_data = apply_transform(train, n)
     model = tf.keras.Sequential([
         tf.keras.layers.Input((n,1)),
         tf.keras.layers.LSTM(number_nodes,input_shape=(n, 1)),
-        tf.keras.layers.Dense(units = number_nodes,activation = "relu"),
-        tf.keras.layers.Dense(units = number_nodes,activation = "relu"),
+        tf.keras.layers.Dense(units=number_nodes, activation="relu"),
+        tf.keras.layers.Dense(units=number_nodes, activation="relu"),
         tf.keras.layers.Dense(1)
     ])
-    model.compile(loss = 'mse',optimizer = tf.keras.optimizers.Adam(learning_rate),metrics = ["mean_absolute_error"])
-    history = model.fit(middle_data,target_data,epochs = epochs,batch_size = batch_size,verbose = 0)
+    model.compile(loss='mse', optimizer=tf.keras.optimizers.Adam(learning_rate), metrics=["mean_absolute_error"])
+    history = model.fit(middle_data, target_data, epochs=epochs, batch_size=batch_size, verbose=0)
     full_predictions = model.predict(middle_data).flatten()
-    return model,history,full_predictions
+    return model, history, full_predictions
 
 # Calculate Accuracy
 def calculate_accuracy(true_values, predictions):
     mse = mean_squared_error(true_values, predictions)
     rmse = np.sqrt(mse)
     mae = mean_absolute_error(true_values, predictions)
-    return mse,rmse,mae
+    return mse, rmse, mae
 
 # Error Evaluation from LSTM Predictions
-def Error_Evaluation(train_data,predict_train_data,n:int):
+def Error_Evaluation(train_data, predict_train_data, n: int):
     errors = []
     for i in range(len(predict_train_data)):
         err = train_data[n + i] - predict_train_data[i]
@@ -143,7 +143,7 @@ def Error_Evaluation(train_data,predict_train_data,n:int):
 
 # ARIMA Parameter Calculation
 def Parameter_calculation(data, lag):
-    finding = auto_arima(data,trace = True, suppress_warnings=True)
+    finding = auto_arima(data, trace=True, suppress_warnings=True)
     fig, ax = plt.subplots(2, 1, figsize=(10, 8))
     plot_acf(data, lags=lag, ax=ax[0])
     plot_pacf(data, lags=lag, ax=ax[1])
@@ -152,16 +152,16 @@ def Parameter_calculation(data, lag):
     return ord
 
 # ARIMA Model for Error Prediction
-def ARIMA_Model(train,len_test,ord):
-    model = ARIMA(train, order = ord)
+def ARIMA_Model(train, len_test, ord):
+    model = ARIMA(train, order=ord)
     model = model.fit()
     # Predict an extra day for the forecast
-    predictions = model.predict(start = len(train),end = len(train) + len_test,type='levels')  
-    full_predictions = model.predict(start = 0,end = len(train)-1,type='levels')
-    return model,predictions,full_predictions
+    predictions = model.predict(start=len(train), end=len(train) + len_test, type='levels')  
+    full_predictions = model.predict(start=0, end=len(train)-1, type='levels')
+    return model, predictions, full_predictions
 
 # Final Predictions (LSTM + ARIMA)
-def Final_Predictions(predictions_errors,predictions, days):
+def Final_Predictions(predictions_errors, predictions, days):
     final_values = []
     for i in range(days):
         final_values.append(predictions_errors[i] + predictions[i])
@@ -191,9 +191,10 @@ def main():
     train, test = data_allocation(data, days)
     plot_train_test(train, test)
 
-    # LSTM Model
+    # LSTM Model 
     st1 = time.time()
-    model, history, full_predictions = LSTM(train, n, number_nodes, learning_rate, epochs, batch_size)
+    # Pass the "Adj Close" column from the training set to the LSTM function
+    model, history, full_predictions = LSTM(train, n, number_nodes, learning_rate, epochs, batch_size) 
     plot_predictions(train[n:], full_predictions, "LSTM PREDICTIONS VS ACTUAL Values For TRAIN Data Set")
 
     # Prediction and Evaluation
